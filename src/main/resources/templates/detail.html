@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Chi tiết sản phẩm</title>
+    <!-- Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"/>
+    <!-- CSRF meta tags nếu cần -->
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}" />
+    <style>
+        .product-image {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .related-item-img {
+            height: 150px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+<!-- Chèn menu từ file menu.html -->
+<div th:replace="menu :: menu"></div>
+
+<div class="container my-4 fs-5">
+    <div class="row">
+        <!-- Ảnh sản phẩm -->
+        <div class="col-md-5">
+            <img th:src="@{/images/{img}(img=${item.image})}" th:alt="${item.name}" class="product-image" />
+        </div>
+        <!-- Thông tin sản phẩm -->
+        <div class="col-md-7">
+            <h1 th:text="${item.name}">Tên sản phẩm</h1>
+            <p class="text-muted" th:text="'Seller: ' + ${item.seller}">Seller: ...</p>
+            <!-- Hiển thị giá + discount -->
+            <div class="mb-3">
+          <span th:if="${item.discount > 0}">
+            <span class="fw-bold text-danger me-1 fs-3" th:text="${item.price * (1 - item.discount / 100)}">1350</span>
+            <span class="text-decoration-line-through text-muted me-2" th:text="${item.price}">1500</span>
+            <span class="text-danger" th:text="'(-' + ${item.discount} + '%)'"></span>
+          </span>
+                <span th:unless="${item.discount > 0}" class="fw-bold text-primary" th:text="${item.price}">1500</span>
+                <span class="ms-1 text-muted">VNĐ</span>
+            </div>
+            <p>Loại: <span th:text="${item.category}">Category</span></p>
+            <p>Đã bán: <span class="text-success fw-bold" th:text="${item.sold}">0</span></p>
+            <p>Số lượng còn: <span class="fw-bold" th:text="${item.qty}">10</span></p>
+            <!-- Thêm vào giỏ hàng -->
+            <form th:action="@{/cart/add/{id}(id=${item.id})}" method="post">
+                <div class="mb-3">
+                    <label>Số lượng</label>
+                    <input type="number" name="quantity" min="1" value="1" class="form-control" style="width:100px;"/>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-cart-plus"></i> Thêm vào giỏ hàng
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Gợi ý sản phẩm cùng loại -->
+    <hr class="my-4"/>
+    <h3>Sản phẩm cùng loại</h3>
+    <div class="row row-cols-1 row-cols-md-4 g-3">
+        <div class="col" th:each="rItem : ${relatedItems}">
+            <div class="card h-100">
+                <img th:src="@{/images/{img}(img=${rItem.image})}" th:alt="${rItem.name}" class="card-img-top related-item-img" />
+                <div class="card-body">
+                    <h5 class="card-title" th:text="${rItem.name}">Tên</h5>
+                    <p>
+                        <span class="text-danger fw-bold me-1 fs-4" th:text="${rItem.price * (1 - rItem.discount / 100)}">1350</span>
+                        <span th:if="${rItem.discount > 0}">
+                <span class="text-decoration-line-through text-muted me-2" th:text="${rItem.price}">1500</span>
+                <span class="text-danger" th:text="'(-' + ${rItem.discount} + '%)'"></span>
+              </span>
+                        <span th:unless="${rItem.discount > 0}" th:text="${rItem.price}">1500</span> VNĐ
+                    </p>
+                    <p class="text-success">Sold: <span th:text="${rItem.sold}">0</span></p>
+                    <a th:href="@{/items/{id}(id=${rItem.id})}" class="btn btn-sm btn-primary">
+                        Xem chi tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+        <!-- End each -->
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

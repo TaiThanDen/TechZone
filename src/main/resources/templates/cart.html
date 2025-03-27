@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Shopping Cart</title>
+    <!-- CSRF meta tags -->
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}" />
+    <!-- Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"/>
+    <style>
+        /* Các style như cũ */
+        body { background-color: #f2f2f2; }
+        .cart-page { background-color: #fff; border-radius: 8px; padding: 24px; }
+        .cart-header { font-weight: bold; font-size: 1.4rem; margin-bottom: 1.5rem; }
+        .item-count { font-size: 1rem; color: #666; }
+        .cart-item { border-bottom: 1px solid #ddd; padding: 1rem 0; }
+        .cart-item:last-child { border-bottom: none; }
+        .cart-item-img { width: 80px; height: 80px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px; }
+        .cart-item-name { font-weight: 600; }
+        .cart-item-seller { font-size: 0.9rem; color: #888; }
+        .cart-item-price { font-weight: bold; color: #e03a3c; }
+        .back-to-shop { margin-top: 1rem; }
+        .back-to-shop a { text-decoration: none; color: #000; }
+        .back-to-shop a:hover { text-decoration: underline; }
+        .summary-box { background-color: #f9f9f9; border-radius: 8px; padding: 24px; }
+        .summary-box h5 { font-weight: 600; margin-bottom: 1.5rem; }
+        .summary-line { display: flex; justify-content: space-between; margin-bottom: 0.75rem; }
+        .checkout-btn { margin-top: 1rem; }
+        .checkout-btn button { width: 100%; background-color: #000; color: #fff; border: none; padding: 0.75rem; border-radius: 4px; }
+        .checkout-btn button:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+<!-- Chèn menu với cú pháp fragment đầy đủ -->
+<div th:replace="~{menu :: menu}"></div>
+
+<div class="container my-4">
+    <div class="row">
+        <!-- Cột trái: Giỏ hàng -->
+        <div class="col-md-9">
+            <div class="cart-page">
+                <div class="d-flex justify-content-between align-items-center cart-header">
+                    <span>Shopping Cart</span>
+                    <span class="item-count" th:text="${cartSummary.totalItems} + ' items'">0 items</span>
+                </div>
+
+                <!-- Danh sách sản phẩm trong giỏ hàng -->
+                <div class="cart-item" th:each="ci : ${cartSummary.items}">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <img th:src="@{/images/{filename}(filename=${ci.item.image})}" th:alt="${ci.item.name}" class="cart-item-img"/>
+                        </div>
+                        <div class="col">
+                            <div class="cart-item-name" th:text="${ci.item.name}">Tên sản phẩm</div>
+                            <div class="cart-item-seller" th:text="${'Category: ' + ci.item.category}">Category</div>
+                        </div>
+                        <div class="col">
+                            <div class="cart-item-seller" th:text="${'Seller: ' + ci.item.seller}">Seller</div>
+                        </div>
+                        <div class="col-auto">
+                            <form th:action="@{/cart/update}" method="post" class="d-inline">
+                                <input type="hidden" name="itemId" th:value="${ci.item.id}"/>
+                                <div class="input-group">
+                                    <input type="number" class="form-control form-control-sm" name="quantity" min="1" th:value="${ci.quantity}"/>
+                                    <button class="btn btn-primary btn-sm" type="submit">Update</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-auto">
+                            <div class="price">
+                                    <span th:if="${ci.item.discount > 0}">
+                                        <span class="text-decoration-line-through text-muted me-2" th:text="${'₫ ' + (ci.item.price * ci.quantity)}">₫0</span>
+                                        <span th:text="${'₫ ' + ((ci.item.price * (1 - ci.item.discount / 100)) * ci.quantity)}">₫0</span>
+                                        <span class="text-danger" th:text="${'(-' + ci.item.discount + '%)'}"></span>
+                                    </span>
+                                <span th:unless="${ci.item.discount > 0}" th:text="${'₫ ' + (ci.item.price * ci.quantity)}">₫0</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <form th:action="@{/cart/remove/{id}(id=${ci.item.id})}" method="post">
+                                <button class="btn btn-link text-danger p-0" type="submit" title="Remove this item">
+                                    <i class="bi bi-x fs-4"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="back-to-shop">
+                    <a th:href="@{/}">&larr; Back to shop</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Summary & Checkout -->
+        <div class="col-md-3">
+            <div class="summary-box">
+                <h5>Summary</h5>
+                <div class="summary-line">
+                    <span>ITEMS</span>
+                    <span th:text="${cartSummary.totalItems}">0</span>
+                </div>
+                <div class="summary-line">
+                    <span>SHIPPING</span>
+                    <span>Standard-Delivery - €5.00</span>
+                </div>
+                <div class="mb-2">
+                    <label>GIVE CODE</label>
+                    <input type="text" class="form-control" placeholder="Enter your code"/>
+                </div>
+                <div class="summary-line">
+                    <span>TOTAL PRICE</span>
+                    <span class="text-danger fw-bold" th:text="${'₫ ' + cartSummary.totalPrice}">₫0</span>
+                </div>
+                <div class="checkout-btn">
+                    <form th:action="@{/cart/checkout}" method="post" onsubmit="return saveCartForUser();">
+                        <!-- CSRF Token -->
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <!-- Lấy userId từ model (LOGGED_IN_USER đã được thêm từ controller) -->
+                        <input type="hidden" id="userId" th:value="${user != null ? user.id : ''}" />
+                        <!-- Hiển thị dữ liệu giỏ hàng dưới dạng JSON (đã được chuyển từ controller) -->
+                        <div id="cartData" style="display: none;" th:text="${cartSummaryJson}"></div>
+                        <button type="submit">CHECKOUT</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Hàm lưu giỏ hàng của người dùng vào localStorage và lưu userId vào cookie
+    function saveCartForUser() {
+        var userId = document.getElementById("userId").value;
+        console.log("DEBUG: userId in input hidden:", userId);
+        if (!userId) {
+            window.location.href = "/login?redirect=/order/my-products";
+            return false;
+        }
+
+        var cartData = document.getElementById("cartData").textContent;
+        localStorage.setItem("cart_" + userId, cartData);
+        document.cookie = "userId=" + userId + ";path=/;max-age=86400;Secure;SameSite=Lax";
+        return true;
+    }
+
+    function logout() {
+        var form = document.createElement("form");
+        form.method = "POST";
+        form.action = "/logout";
+        var csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute("content");
+        var csrfInput = document.createElement("input");
+        csrfInput.type = "hidden";
+        csrfInput.name = "_csrf";
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>
+</body>
+</html>

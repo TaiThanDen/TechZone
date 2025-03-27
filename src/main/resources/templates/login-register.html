@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <title>Login & Register</title>
+    <!-- Bootstrap 5 CSS (CDN) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" />
+    <!-- Thêm CSRF meta tags chỉ khi _csrf khác null -->
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}" />
+    <style>
+        body {
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .login-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 80%;
+            max-width: 1200px;
+        }
+        .left-col {
+            padding: 2.5rem;
+        }
+        .right-col {
+            background: linear-gradient(135deg, #6E47F5 0%, #a45bfc 100%);
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .right-col img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .toggle-link {
+            color: #0D6EFD;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .toggle-link:hover {
+            text-decoration: underline;
+        }
+        .d-none {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <div class="login-card">
+        <div class="row g-0">
+            <!-- Left Column: Form Login/Register -->
+            <div class="col-md-7 left-col">
+                <!-- LOGIN FORM -->
+                <div id="loginForm">
+                    <h5 class="mb-4 fw-bold">Sign In</h5>
+                    <form th:action="@{/login}" method="post" id="loginFormActual">
+                        <!-- CSRF Token -->
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="loginEmail" name="email" placeholder="you@example.com" required />
+                        </div>
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" name="password" placeholder="••••••" required />
+                        </div>
+                        <!-- Remember Me and Forgot Password -->
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="rememberMe" name="remember-me" />
+                                <label class="form-check-label ms-1" for="rememberMe">Remember me</label>
+                            </div>
+                            <a href="#" class="text-secondary" style="font-size: 0.9rem;">Forgot Password?</a>
+                        </div>
+                        <!-- Submit -->
+                        <button type="submit" class="btn btn-primary w-100 py-2 mb-3">Sign In</button>
+                    </form>
+                    <div class="text-center">
+                        <span style="font-size: 0.9rem;">Don't have an account? </span>
+                        <span class="toggle-link" onclick="showRegister()">Sign Up</span>
+                    </div>
+                </div>
+                <!-- REGISTER FORM -->
+                <div id="registerForm" class="d-none">
+                    <h5 class="mb-4 fw-bold">Sign Up</h5>
+                    <form th:action="@{/register}" method="post" id="registerFormActual">
+                        <!-- CSRF Token -->
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <!-- Full Name -->
+                        <div class="mb-3">
+                            <label for="registerName" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="registerName" name="name" placeholder="Your name" required />
+                        </div>
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="registerEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="registerEmail" name="email" placeholder="you@example.com" required />
+                        </div>
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label for="registerPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="registerPassword" name="password" placeholder="••••••" required />
+                        </div>
+                        <!-- Submit -->
+                        <button type="submit" class="btn btn-primary w-100 py-2 mb-3">Sign Up</button>
+                    </form>
+                    <div class="text-center">
+                        <span style="font-size: 0.9rem;">Already have an account? </span>
+                        <span class="toggle-link" onclick="showLogin()">Sign In</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Right Column: Illustration -->
+            <div class="col-md-5 right-col">
+                <img src="https://cdn.dribbble.com/userupload/14898990/file/original-ba68e98ea10e1867e831884c3b153387.png?resize=1504x1128&vertical=center" alt="Login Illustration" />
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Bootstrap 5 JS (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function showRegister() {
+        document.getElementById("loginForm").classList.add("d-none");
+        document.getElementById("registerForm").classList.remove("d-none");
+    }
+    function showLogin() {
+        document.getElementById("registerForm").classList.add("d-none");
+        document.getElementById("loginForm").classList.remove("d-none");
+    }
+</script>
+</body>
+</html>

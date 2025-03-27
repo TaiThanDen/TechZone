@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Quản lý</title>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+<div th:replace="~{menu :: menu}"></div>
+<div class="container my-5">
+    <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="product-tab" data-bs-toggle="tab" data-bs-target="#product" type="button" role="tab">Quản lý sản phẩm</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="order-tab" data-bs-toggle="tab" data-bs-target="#order" type="button" role="tab">Quản lý đơn hàng</button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-4">
+        <!-- Tab Quản lý sản phẩm -->
+        <div class="tab-pane fade show active" id="product" role="tabpanel">
+            <form id="itemForm">
+                <input type="hidden" id="itemId">
+                <div class="mb-3"><label class="form-label">Tên sản phẩm</label><input type="text" class="form-control" id="itemName" required></div>
+                <div class="mb-3"><label class="form-label">Giá</label><input type="number" class="form-control" id="itemPrice" required></div>
+                <div class="mb-3"><label class="form-label">Số lượng</label><input type="number" class="form-control" id="itemQty" required></div>
+                <div class="mb-3"><label class="form-label">Hình ảnh</label><input type="file" class="form-control" id="itemImage"></div>
+                <div class="mb-3"><label class="form-label">Người bán</label><input type="text" class="form-control" id="itemSeller"></div>
+                <div class="mb-3"><label class="form-label">Danh mục</label><input type="text" class="form-control" id="itemCategory" required></div>
+                <div class="mb-3"><label class="form-label">Giảm giá (%)</label><input type="number" class="form-control" id="itemDiscount"></div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary" id="saveButton">Thêm mới</button>
+                    <button type="button" class="btn btn-success" id="updateButton">Cập nhật</button>
+                    <button type="button" class="btn btn-warning" id="resetForm">Hủy</button>
+                </div>
+            </form>
+
+            <table class="table mt-4" id="itemTable">
+                <thead>
+                <tr>
+                    <th>ID</th><th>Tên</th><th>Giá</th><th>SL</th><th>Danh mục</th><th>Ảnh</th><th>Hành động</th>
+                </tr>
+                </thead>
+                <tbody id="itemTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Tab Quản lý đơn hàng -->
+        <div class="tab-pane fade" id="order" role="tabpanel">
+            <h4>Danh sách đơn hàng</h4>
+            <table class="table mt-3" id="orderTable">
+                <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Sản phẩm</th>
+                    <th>Số lượng</th>
+                    <th>Ảnh</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+                </thead>
+                <tbody id="orderTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById("itemForm");
+    const saveBtn = document.getElementById("saveButton");
+    const updateBtn = document.getElementById("updateButton");
+    const resetBtn = document.getElementById("resetForm");
+    const tableBody = document.getElementById("itemTableBody");
+
+    const API_BASE = "/api/items";
+    const ORDER_API = "/api/admin/orders";
+    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+    async function fetchItems() {
+        const res = await axios.get(API_BASE);
+        tableBody.innerHTML = "";
+        res.data.forEach(item => {
+            tableBody.innerHTML += `
+                <tr>
+                    <td>${item.id}</td>
+                    <td>${item.name}</td>
+                    <td>${item.price}</td>
+                    <td>${item.qty}</td>
+                    <td>${item.category}</td>
+                    <td><img src="/images/${item.image}?t=${Date.now()}" width="70" onerror="this.src='https://via.placeholder.com/70?text=No+Image';"></td>
+                    <td>
+                        <button class="btn btn-info btn-sm" onclick='editItem(${JSON.stringify(item)})'>Sửa</button>
+                        <button class="btn btn-danger btn-sm" onclick='deleteItem(${item.id})'>Xóa</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function editItem(item) {
+        document.getElementById("itemId").value = item.id;
+        document.getElementById("itemName").value = item.name;
+        document.getElementById("itemPrice").value = item.price;
+        document.getElementById("itemQty").value = item.qty;
+        document.getElementById("itemSeller").value = item.seller;
+        document.getElementById("itemCategory").value = item.category;
+        document.getElementById("itemDiscount").value = item.discount;
+    }
+
+    resetBtn.addEventListener("click", () => {
+        form.reset();
+        document.getElementById("itemId").value = "";
+    });
+
+    saveBtn.addEventListener("click", async () => {
+        const formData = buildFormData();
+        try {
+            await axios.post(API_BASE, formData, {
+                headers: { [csrfHeader]: csrfToken }
+            });
+            await fetchItems();
+            form.reset();
+        } catch (error) {
+            alert("Lỗi khi thêm sản phẩm: " + error.message);
+        }
+    });
+
+    updateBtn.addEventListener("click", async () => {
+        const id = document.getElementById("itemId").value;
+        if (!id) {
+            alert("Vui lòng chọn sản phẩm cần cập nhật.");
+            return;
+        }
+        const formData = buildFormData();
+        try {
+            await axios.put(`${API_BASE}/${id}`, formData, {
+                headers: { [csrfHeader]: csrfToken }
+            });
+            await fetchItems();
+            form.reset();
+        } catch (error) {
+            alert("Lỗi khi cập nhật sản phẩm: " + error.message);
+        }
+    });
+
+    function buildFormData() {
+        const formData = new FormData();
+        formData.append("name", document.getElementById("itemName").value);
+        formData.append("price", document.getElementById("itemPrice").value);
+        formData.append("qty", document.getElementById("itemQty").value);
+        formData.append("seller", document.getElementById("itemSeller").value);
+        formData.append("category", document.getElementById("itemCategory").value);
+        formData.append("discount", document.getElementById("itemDiscount").value);
+        const file = document.getElementById("itemImage").files[0];
+        if (file) formData.append("file", file);
+        return formData;
+    }
+
+    async function deleteItem(id) {
+        if (confirm("Bạn có chắc chắn muốn xóa?")) {
+            try {
+                await axios.delete(`${API_BASE}/${id}`, {
+                    headers: { [csrfHeader]: csrfToken }
+                });
+                await fetchItems();
+            } catch (error) {
+                alert("Lỗi khi xóa sản phẩm.");
+            }
+        }
+    }
+
+    async function fetchOrders() {
+        const res = await axios.get("/api/admin/orders");
+        const orderBody = document.getElementById("orderTableBody");
+        orderBody.innerHTML = "";
+        res.data.forEach(row => {
+            orderBody.innerHTML += `
+            <tr>
+                <td>${row.user.email}</td>
+                <td>${row.item.name}</td>
+                <td>${row.quantity}</td>
+                <td><img src="/images/${row.item.image}" width="70" onerror="this.src='https://via.placeholder.com/70?text=No+Image';"></td>
+                <td>${row.status}</td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="deleteOrder(${row.id})">Xoá</button>
+                </td>
+            </tr>
+        `;
+        });
+    }
+    async function deleteOrder(id) {
+        if (confirm("Bạn có chắc chắn muốn xoá đơn hàng này?")) {
+            try {
+                await axios.delete(`/api/admin/orders/${id}`, {
+                    headers: { [csrfHeader]: csrfToken }
+                });
+                await fetchOrders();
+            } catch (error) {
+                alert("Lỗi khi xoá đơn hàng.");
+            }
+        }
+    }
+
+    fetchItems();
+    fetchOrders();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
